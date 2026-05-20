@@ -210,7 +210,7 @@
         ▲ 沿著箭頭方向滑動翻面標籤<br>
         ✕ 避開貓咪與老鼠<br>
         ⚠ 紅色易碎品千萬別碰<br>
-        ◆ 別讓 Figure 03 超越你
+        ◆ 別讓 Fi03 超越你
       </div>
       <button id="startBtn">START</button>
     </div>
@@ -218,7 +218,7 @@
       <div class="notice">
         <h2>資 遣 通 知</h2>
         <div class="row you"><span>您本日揀貨</span><span id="finalYou">0</span></div>
-        <div class="row bot"><span>Figure 03</span><span id="finalBot">0</span></div>
+        <div class="row bot"><span>Fi03</span><span id="finalBot">0</span></div>
         <div class="row"><span>到達階段</span><span id="finalPhase">1</span></div>
         <div class="row"><span>效率比</span><span id="ratio">0%</span></div>
         <div class="stamp">REPLACED</div>
@@ -1016,7 +1016,7 @@ function endGame() {
     ? Math.round((player.score / bot.score) * 100)
     : 0;
   document.getElementById('ratio').textContent = ratio + '%';
-  document.getElementById('deathReason').textContent = deathReason ? `死因：${deathReason}` : '';
+  document.getElementById('deathReason').textContent = deathReason ? `原因：${deathReason}` : '';
   document.getElementById('gameover').classList.remove('hidden');
 }
 
