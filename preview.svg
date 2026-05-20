@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- 背景：墨綠 -->
+  <rect width="1200" height="630" fill="#1a6b54"/>
+
+  <!-- 背景幾何裝飾（魷魚遊戲感） -->
+  <g opacity="0.12" fill="#ff0266">
+    <circle cx="100" cy="120" r="50"/>
+    <rect x="1050" y="80" width="80" height="80"/>
+    <polygon points="950,520 1010,520 980,460"/>
+    <circle cx="80" cy="500" r="35"/>
+    <polygon points="180,420 230,420 205,375"/>
+    <rect x="600" y="50" width="50" height="50"/>
+    <circle cx="1100" cy="450" r="45"/>
+  </g>
+
+  <!-- 中央輸送帶 -->
+  <g>
+    <rect x="430" y="180" width="340" height="380" fill="#0f4a3a" stroke="#1a1a1a" stroke-width="4"/>
+    <!-- 輸送帶橫線 -->
+    <g stroke="#2a8a6e" stroke-width="3">
+      <line x1="436" y1="220" x2="764" y2="220"/>
+      <line x1="436" y1="260" x2="764" y2="260"/>
+      <line x1="436" y1="300" x2="764" y2="300"/>
+      <line x1="436" y1="340" x2="764" y2="340"/>
+      <line x1="436" y1="380" x2="764" y2="380"/>
+      <line x1="436" y1="420" x2="764" y2="420"/>
+      <line x1="436" y1="460" x2="764" y2="460"/>
+      <line x1="436" y1="500" x2="764" y2="500"/>
+      <line x1="436" y1="540" x2="764" y2="540"/>
+    </g>
+  </g>
+
+  <!-- 包裹 1（牛皮紙箱，中央，有箭頭標籤） -->
+  <g transform="translate(600, 320) rotate(-6)">
+    <!-- 陰影 -->
+    <rect x="-86" y="-66" width="180" height="140" fill="rgba(0,0,0,0.35)" transform="translate(8,10)"/>
+    <!-- 箱身 -->
+    <rect x="-90" y="-70" width="180" height="140" fill="#c89464"/>
+    <!-- 接縫 -->
+    <line x1="0" y1="-70" x2="0" y2="70" stroke="#a07040" stroke-width="3"/>
+    <line x1="-90" y1="0" x2="90" y2="0" stroke="#a07040" stroke-width="3"/>
+    <!-- 標籤 -->
+    <rect x="-55" y="-45" width="110" height="80" fill="#f4ead5" stroke="#1a1a1a" stroke-width="2"/>
+    <!-- 箭頭（圓內三角，指向右） -->
+    <circle cx="0" cy="-5" r="32" stroke="#1a1a1a" stroke-width="3" fill="none"/>
+    <polygon points="15,-5 -10,11 -10,-21" fill="#ff0266"/>
+  </g>
+
+  <!-- 包裹 2（白色小箱，左上） -->
+  <g transform="translate(490, 220) rotate(5)">
+    <rect x="-50" y="-40" width="105" height="85" fill="rgba(0,0,0,0.35)" transform="translate(5,7)"/>
+    <rect x="-55" y="-45" width="105" height="85" fill="#e8e2d4"/>
+    <line x1="0" y1="-45" x2="0" y2="40" stroke="#b8b0a0" stroke-width="2"/>
+    <line x1="-55" y1="-3" x2="50" y2="-3" stroke="#b8b0a0" stroke-width="2"/>
+    <rect x="-30" y="-25" width="60" height="45" fill="#f4ead5" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- 向上箭頭 -->
+    <circle cx="0" cy="-3" r="17" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+    <polygon points="0,-15 -9,5 9,5" fill="#ff0266"/>
+  </g>
+
+  <!-- 包裹 3（急件黃，右下角附近） -->
+  <g transform="translate(710, 470) rotate(-3)">
+    <rect x="-55" y="-45" width="115" height="95" fill="rgba(0,0,0,0.35)" transform="translate(6,8)"/>
+    <rect x="-60" y="-50" width="115" height="95" fill="#f4c430"/>
+    <rect x="-60" y="-50" width="115" height="4" fill="#dc2626"/>
+    <rect x="-60" y="41" width="115" height="4" fill="#dc2626"/>
+    <line x1="-2" y1="-50" x2="-2" y2="45" stroke="#c89c10" stroke-width="2"/>
+    <line x1="-60" y1="-2" x2="55" y2="-2" stroke="#c89c10" stroke-width="2"/>
+    <rect x="-30" y="-25" width="60" height="48" fill="#f4ead5" stroke="#1a1a1a" stroke-width="1.5"/>
+    <!-- 向左箭頭 -->
+    <circle cx="0" cy="-1" r="18" stroke="#1a1a1a" stroke-width="2" fill="none"/>
+    <polygon points="-11,-1 5,-11 5,9" fill="#ff0266"/>
+  </g>
+
+  <!-- 右上角 Figure 03（HUD 風格） -->
+  <g transform="translate(1075, 130)">
+    <!-- 框 -->
+    <rect x="-65" y="-90" width="130" height="180" fill="rgba(0,0,0,0.5)" stroke="#ff0266" stroke-width="2"/>
+    <text x="0" y="-72" font-family="monospace" font-size="14" font-weight="bold" fill="#ff0266" text-anchor="middle">FIGURE 03</text>
+    <!-- 機器人頭 -->
+    <circle cx="0" cy="-40" r="22" fill="#ffffff"/>
+    <rect x="-13" y="-43" width="26" height="6" fill="#1a1a1a"/>
+    <!-- 機器人身體（梯形） -->
+    <polygon points="-22,-18 22,-18 32,28 -32,28" fill="#ffffff"/>
+    <!-- 手臂 -->
+    <line x1="-22" y1="-10" x2="-32" y2="20" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+    <line x1="22" y1="-10" x2="38" y2="15" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+    <!-- 迷你輸送帶 -->
+    <rect x="-58" y="48" width="116" height="14" fill="#0f4a3a"/>
+    <rect x="-25" y="40" width="14" height="14" fill="#c89464"/>
+    <!-- 計數（用小方塊代替 emoji 確保任何環境都能顯示） -->
+    <rect x="-38" y="69" width="16" height="14" fill="#c89464" stroke="#a07040" stroke-width="1"/>
+    <line x1="-30" y1="69" x2="-30" y2="83" stroke="#a07040" stroke-width="1"/>
+    <text x="0" y="84" font-family="monospace" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="start" transform="translate(-12,0)">143</text>
+  </g>
+
+  <!-- 左下角貓咪 -->
+  <g transform="translate(220, 480)">
+    <!-- 影子 -->
+    <ellipse cx="0" cy="38" rx="42" ry="8" fill="rgba(0,0,0,0.3)"/>
+    <!-- 身體 -->
+    <ellipse cx="0" cy="8" rx="40" ry="28" fill="#2a2a2a"/>
+    <!-- 頭 -->
+    <circle cx="-22" cy="-18" r="25" fill="#2a2a2a"/>
+    <!-- 耳朵 -->
+    <polygon points="-38,-32 -32,-46 -22,-32" fill="#2a2a2a"/>
+    <polygon points="-16,-32 -8,-46 -4,-28" fill="#2a2a2a"/>
+    <!-- 瞇瞇眼 -->
+    <line x1="-29" y1="-18" x2="-22" y2="-18" stroke="#4ade80" stroke-width="2.5"/>
+    <line x1="-18" y1="-18" x2="-11" y2="-18" stroke="#4ade80" stroke-width="2.5"/>
+    <!-- 尾巴 -->
+    <path d="M 36,8 Q 56,3 50,28" stroke="#2a2a2a" stroke-width="11" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- 標題 -->
+  <text x="60" y="105" font-family="'Noto Sans CJK TC', 'Courier New', monospace" font-size="68" font-weight="bold" fill="#ff0266" letter-spacing="6">最強揀貨員</text>
+  <text x="60" y="155" font-family="'Courier New', monospace" font-size="26" fill="#ffffff" letter-spacing="4" opacity="0.9">THE ULTIMATE PICKER</text>
+
+  <!-- 標語 -->
+  <text x="60" y="565" font-family="'Noto Sans CJK TC', sans-serif" font-size="22" fill="#ffffff" letter-spacing="2">在被 AI 取代之前，</text>
+  <text x="60" y="595" font-family="'Noto Sans CJK TC', sans-serif" font-size="22" font-weight="bold" fill="#4ade80" letter-spacing="2">你能撐多久？</text>
+
+  <!-- 右下角小印章感的標籤 -->
+  <g transform="translate(1085, 568) rotate(-8)">
+    <rect x="-90" y="-22" width="180" height="44" fill="none" stroke="#ff0266" stroke-width="3"/>
+    <text x="0" y="8" font-family="monospace" font-size="20" font-weight="bold" fill="#ff0266" text-anchor="middle" letter-spacing="3">REPLACED?</text>
+  </g>
+</svg>

@@ -1,5 +1,7 @@
 # 最強揀貨員 The Ultimate Picker
 
+![preview](preview.png)
+
 > 一款向 Figure 03 致敬（兼宣戰）的瘋狂揀貨小遊戲
 
 A frantic warehouse picking game inspired by Figure 03 — outpace the AI before it replaces you.
@@ -60,6 +62,27 @@ python3 -m http.server 8000
 3. **Source** 選 `Deploy from a branch`
 4. **Branch** 選 `main`（資料夾 `/ (root)`）
 5. 等一兩分鐘，遊戲就會在 `https://<你的帳號>.github.io/<倉庫名>/` 上線
+
+### ⚠️ 部署後一定要做：更新分享預覽圖網址
+
+`index.html` 內的 Open Graph meta 預設為 `YOUR_USERNAME`，要改成你的 GitHub 帳號，分享連結才會顯示預覽圖：
+
+```bash
+# 用編輯器搜尋並取代
+# 把 YOUR_USERNAME 全部換成你的 GitHub 使用者名稱
+# 共會出現在 og:image / twitter:image / og:url 三處
+```
+
+或一行指令搞定（macOS/Linux）：
+
+```bash
+sed -i.bak 's|YOUR_USERNAME|你的帳號|g' index.html && rm index.html.bak
+```
+
+改完 push 上去，可以用以下工具測試預覽是否正常：
+- [Facebook 偵錯工具](https://developers.facebook.com/tools/debug/)
+- [Twitter Card Validator](https://cards-dev.twitter.com/validator)
+- [OpenGraph.xyz](https://www.opengraph.xyz/)
 
 ## 📱 包成 Android APK（可選）
 
