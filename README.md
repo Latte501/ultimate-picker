@@ -6,7 +6,7 @@
 
 A frantic warehouse picking game inspired by Figure 03 — outpace the AI before it replaces you.
 
-[🎮 線上試玩 / Play Online](https://YOUR_USERNAME.github.io/ultimate-picker/)
+[🎮 線上試玩 / Play Online](https://latte501.github.io/ultimate-picker/)
 
 ---
 
