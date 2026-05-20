@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>最強揀貨員 The Ultimate Picker</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #0d0d0d;
+    font-family: 'Courier New', monospace;
+    touch-action: none;
+  }
+  #game {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: #1a6b54;
+    overflow: hidden;
+  }
+  canvas { display: block; }
+  #overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .screen {
+    position: absolute;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    pointer-events: auto;
+    background: rgba(13, 13, 13, 0.92);
+    color: #fff;
+  }
+  .screen h1 {
+    font-size: 42px;
+    color: #ff0266;
+    margin-bottom: 8px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 20px rgba(255, 2, 102, 0.6);
+  }
+  .screen .sub {
+    color: #aaa;
+    font-size: 14px;
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+  .screen button {
+    background: #ff0266;
+    color: #fff;
+    border: none;
+    padding: 14px 36px;
+    font-size: 18px;
+    font-family: inherit;
+    letter-spacing: 3px;
+    cursor: pointer;
+    margin-top: 16px;
+    border-radius: 2px;
+    box-shadow: 0 4px 0 #c4014e;
+  }
+  .screen button:active { transform: translateY(2px); box-shadow: 0 2px 0 #c4014e; }
+  .hidden { display: none !important; }
+
+  #gameover .notice {
+    background: #f4ead5;
+    color: #1a1a1a;
+    padding: 28px 24px;
+    width: 86%;
+    max-width: 320px;
+    border: 2px solid #1a1a1a;
+    position: relative;
+    transform: rotate(-2deg);
+    box-shadow: 8px 8px 0 rgba(255, 2, 102, 0.4);
+  }
+  #gameover .notice h2 {
+    font-size: 22px;
+    text-align: center;
+    border-bottom: 2px solid #1a1a1a;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    letter-spacing: 4px;
+  }
+  #gameover .notice .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 15px;
+    border-bottom: 1px dashed #888;
+  }
+  #gameover .notice .row.you { color: #1a6b54; font-weight: bold; }
+  #gameover .notice .row.bot { color: #ff0266; font-weight: bold; }
+  #gameover .notice .stamp {
+    position: absolute;
+    right: -10px; bottom: -10px;
+    border: 3px solid #ff0266;
+    color: #ff0266;
+    padding: 6px 12px;
+    font-size: 14px;
+    transform: rotate(12deg);
+    background: rgba(244, 234, 213, 0.9);
+    letter-spacing: 2px;
+  }
+  #gameover .verdict {
+    color: #ff0266;
+    margin-top: 24px;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-align: center;
+  }
+  #gameover .death-reason {
+    color: #aaa;
+    margin-top: 8px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  #flash {
+    position: absolute; inset: 0;
+    background: #4ade80;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+    mix-blend-mode: screen;
+  }
+  #flash.show { animation: flashAnim 0.5s ease-out; }
+  @keyframes flashAnim {
+    0% { opacity: 0; }
+    20% { opacity: 0.6; }
+    100% { opacity: 0; }
+  }
+
+  /* 警報紅色閃光（淘汰前） */
+  #redflash {
+    position: absolute; inset: 0;
+    background: #dc2626;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  #redflash.show { animation: redFlashAnim 0.6s ease-in-out infinite; }
+  @keyframes redFlashAnim {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.4; }
+  }
+
+  /* 靜音按鈕 */
+  #muteBtn {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.4);
+    border: 1px solid #ff0266;
+    color: #ff0266;
+    padding: 4px 10px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 20;
+    border-radius: 2px;
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="canvas"></canvas>
+  <div id="flash"></div>
+  <div id="redflash"></div>
+  <div id="overlay">
+    <button id="muteBtn">♪ ON</button>
+    <div id="start" class="screen">
+      <h1>最強揀貨員</h1>
+      <div class="sub">THE ULTIMATE PICKER</div>
+      <div style="color:#ccc; font-size:13px; text-align:center; line-height:1.8; margin: 20px 0;">
+        ▲ 沿著箭頭方向滑動翻面標籤<br>
+        ✕ 避開貓咪與老鼠<br>
+        ⚠ 紅色易碎品千萬別碰<br>
+        ◆ 別讓 Figure 03 超越你
+      </div>
+      <button id="startBtn">START</button>
+    </div>
+    <div id="gameover" class="screen hidden">
+      <div class="notice">
+        <h2>資 遣 通 知</h2>
+        <div class="row you"><span>您本日揀貨</span><span id="finalYou">0</span></div>
+        <div class="row bot"><span>Figure 03</span><span id="finalBot">0</span></div>
+        <div class="row"><span>到達階段</span><span id="finalPhase">1</span></div>
+        <div class="row"><span>效率比</span><span id="ratio">0%</span></div>
+        <div class="stamp">REPLACED</div>
+      </div>
+      <div class="verdict">您 已 被 AI 取 代</div>
+      <div class="death-reason" id="deathReason"></div>
+      <button id="restartBtn">再試一次</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 配置 ====================
+const COLORS = {
+  bg: '#1a6b54',
+  pink: '#ff0266',
+  pinkDark: '#c4014e',
+  cream: '#f4ead5',
+  ink: '#1a1a1a',
+  belt: '#0f4a3a',
+  beltLine: '#2a8a6e',
+  white: '#ffffff',
+  green: '#4ade80',
+  red: '#dc2626',
+  fragileRed: '#e11d48',
+  catColor: '#2a2a2a',
+  mouseColor: '#9ca3af',
+};
+
+const PACKAGE_VARIANTS = [
+  { body: '#c89464', edge: '#a07040', name: 'kraft' },
+  { body: '#e8e2d4', edge: '#b8b0a0', name: 'white' },
+  { body: '#8b6342', edge: '#5c4128', name: 'darkbrown' },
+  { body: '#a8a8a8', edge: '#707070', name: 'gray' },
+  { body: '#f4c430', edge: '#c89c10', name: 'urgent' },
+  { body: '#5a8aa8', edge: '#3a6a88', name: 'blue' },
+];
+
+const PACKAGE_SIZES = [
+  { scale: 0.55, speedMul: 1.15, name: 'small' },
+  { scale: 0.78, speedMul: 1.00, name: 'medium' },
+  { scale: 0.95, speedMul: 0.85, name: 'large' },
+];
+
+const ARROW_DIRS = ['up', 'down', 'left', 'right'];
+const ARROW_VECTORS = {
+  up:    { x: 0, y: -1 },
+  down:  { x: 0, y: 1 },
+  left:  { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+// 階段配置
+const PHASES = [
+  { name: 'ROUND 1', sub: '一般出貨',     duration: 30, beltBase: 60,  spawnBase: 1100, fragileChance: 0,    botSpeed: 1500 },
+  { name: 'ROUND 2', sub: '混入易碎品',   duration: 30, beltBase: 90,  spawnBase: 900,  fragileChance: 0.12, botSpeed: 1200 },
+  { name: 'ROUND 3', sub: '黑色星期五',   duration: 30, beltBase: 130, spawnBase: 700,  fragileChance: 0.15, botSpeed: 950  },
+  { name: 'BOSS',    sub: 'AI 親自下場',  duration: 999, beltBase: 150, spawnBase: 650, fragileChance: 0.18, botSpeed: 800  },
+];
+
+// ==================== 音效系統（Web Audio 合成） ====================
+const Audio = {
+  ctx: null,
+  master: null,
+  muted: false,
+  init() {
+    if (this.ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    this.ctx = new AC();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.3;
+    this.master.connect(this.ctx.destination);
+  },
+  resume() {
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  setMuted(m) {
+    this.muted = m;
+    if (this.master) this.master.gain.value = m ? 0 : 0.3;
+  },
+  // 翻面成功：紙張啪
+  flip() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(800, t);
+    o.frequency.exponentialRampToValueAtTime(200, t + 0.08);
+    g.gain.setValueAtTime(0.15, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g).connect(this.master);
+    o.start(t); o.stop(t + 0.12);
+  },
+  // 滑動：低頻噪音
+  slide() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.06, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.3 * (1 - i / data.length);
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 600;
+    const g = this.ctx.createGain();
+    g.gain.value = 0.5;
+    src.connect(filter).connect(g).connect(this.master);
+    src.start(t);
+  },
+  // Figure 03 咔噠（機械短音）
+  clack() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(1200, t);
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    o.connect(g).connect(this.master);
+    o.start(t); o.stop(t + 0.05);
+  },
+  // 失誤
+  miss() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(220, t);
+    o.frequency.exponentialRampToValueAtTime(80, t + 0.3);
+    g.gain.setValueAtTime(0.2, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    o.connect(g).connect(this.master);
+    o.start(t); o.stop(t + 0.32);
+  },
+  // 超車（上升音階）
+  overtake() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t + i * 0.08);
+      g.gain.linearRampToValueAtTime(0.2, t + i * 0.08 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.15);
+      o.connect(g).connect(this.master);
+      o.start(t + i * 0.08); o.stop(t + i * 0.08 + 0.16);
+    });
+  },
+  // 警報（持續循環的高低音）
+  alarmTimer: null,
+  alarmStart() {
+    if (!this.ctx || this.muted) return;
+    this.alarmStop();
+    let high = true;
+    const play = () => {
+      const t = this.ctx.currentTime;
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = high ? 900 : 600;
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      o.connect(g).connect(this.master);
+      o.start(t); o.stop(t + 0.2);
+      high = !high;
+    };
+    play();
+    this.alarmTimer = setInterval(play, 220);
+  },
+  alarmStop() {
+    if (this.alarmTimer) {
+      clearInterval(this.alarmTimer);
+      this.alarmTimer = null;
+    }
+  },
+  // 階段切換（鐺！）
+  roundBell() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    [400, 600, 800].forEach((freq, i) => {
+      const o = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(0, t + i * 0.04);
+      g.gain.linearRampToValueAtTime(0.18, t + i * 0.04 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.04 + 0.8);
+      o.connect(g).connect(this.master);
+      o.start(t + i * 0.04); o.stop(t + i * 0.04 + 0.82);
+    });
+  },
+  // Boss 出場（低音衝擊）
+  bossEnter() {
+    if (!this.ctx || this.muted) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(60, t);
+    o.frequency.linearRampToValueAtTime(40, t + 1.2);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+    o.connect(g).connect(this.master);
+    o.start(t); o.stop(t + 1.3);
+  },
+};
+
+// ==================== 畫面尺寸 ====================
+const game = document.getElementById('game');
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let W, H, BELT_X, BELT_W, BELT_Y_TOP, BELT_Y_BOTTOM;
+
+function resize() {
+  const targetRatio = 9 / 16;
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  if (w / h > targetRatio) {
+    w = h * targetRatio;
+  } else {
+    h = w / targetRatio;
+  }
+  W = Math.floor(w);
+  H = Math.floor(h);
+  game.style.width = W + 'px';
+  game.style.height = H + 'px';
+  canvas.width = W;
+  canvas.height = H;
+
+  BELT_W = W * 0.55;
+  BELT_X = (W - BELT_W) / 2;
+  BELT_Y_TOP = H * 0.18;
+  BELT_Y_BOTTOM = H * 0.92;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ==================== 遊戲狀態 ====================
+let state = 'menu'; // menu, playing, dying, gameover
+let lastTime = 0;
+let elapsed = 0;
+let phaseIndex = 0;
+let phaseStartTime = 0;
+let phaseAnnounceTimer = 0; // 顯示階段名稱的計時
+let deathReason = '';
+
+let player = {
+  score: 0,
+  lives: 3,
+};
+
+let bot = {
+  score: 0,
+  cycleTime: 1500,
+  cycleProgress: 0,
+  // Boss 階段：bot 會在主畫面接客
+  bossPackages: [], // bot 自己抓走的包裹（視覺）
+};
+
+let packages = [];
+let entities = [];
+let particles = [];
+
+let spawnTimer = 0;
+let spawnInterval = 1200;
+let beltSpeed = 60;
+let overtakenLastFrame = false;
+let lastClackTime = 0;
+
+// 失敗演出狀態機
+let deathAnim = {
+  t: 0,
+  duration: 2.6,
+  bigBotX: 0,
+  bigBotY: 0,
+  bigBotScale: 1,
+  playerCaught: false,
+  playerX: 0,
+  playerY: 0,
+};
+
+// ==================== 工具 ====================
+function rand(a, b) { return a + Math.random() * (b - a); }
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+// ==================== 包裹 ====================
+class Package {
+  constructor(opts = {}) {
+    const sizeVariant = opts.sizeVariant || pick(PACKAGE_SIZES);
+    this.sizeVariant = sizeVariant;
+    this.isFragile = !!opts.fragile;
+    this.colorVariant = opts.colorVariant ||
+      (this.isFragile ? { body: '#fff5f5', edge: '#dc2626' } : pick(PACKAGE_VARIANTS));
+
+    const baseW = BELT_W * 0.75;
+    this.w = baseW * sizeVariant.scale;
+    this.h = this.w * rand(0.7, 0.88);
+    this.speedMul = sizeVariant.speedMul;
+
+    const margin = this.w / 2 + 6;
+    // Boss 階段：玩家區域變窄
+    const effectiveBeltX = (phaseIndex === 3) ? BELT_X + BELT_W * 0.5 : BELT_X;
+    const effectiveBeltW = (phaseIndex === 3) ? BELT_W * 0.5 : BELT_W;
+    const minX = effectiveBeltX + margin;
+    const maxX = effectiveBeltX + effectiveBeltW - margin;
+    this.x = opts.x !== undefined ? opts.x : rand(minX, maxX);
+    this.y = opts.y !== undefined ? opts.y : (BELT_Y_TOP - this.h / 2 - rand(0, 40));
+    this.rot = opts.rot !== undefined ? opts.rot : rand(-0.25, 0.25);
+
+    this.dir = pick(ARROW_DIRS);
+    this.flipped = false;
+    this.flipProgress = 0;
+    this.dragStart = null;
+    this.dragCurrent = null;
+    this.alive = true;
+    this.exitProgress = 0;
+  }
+
+  update(dt) {
+    if (this.flipped) {
+      this.exitProgress += dt * 2;
+      this.y += beltSpeed * 2.5 * dt * this.speedMul;
+      if (this.y > H + 100) this.alive = false;
+      return;
+    }
+    this.y += beltSpeed * dt * this.speedMul;
+    if (this.dragStart && !this.dragCurrent) {
+      this.flipProgress = Math.max(0, this.flipProgress - dt * 4);
+    }
+    if (this.y - this.h / 2 > BELT_Y_BOTTOM) {
+      this.alive = false;
+      // 易碎品流出去不算失誤（你本來就不該翻）
+      if (!this.isFragile) onMiss();
+    }
+  }
+
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+
+    const flipScale = this.flipped ? 1 - this.exitProgress * 0.1 : 1;
+    ctx.scale(flipScale, flipScale);
+
+    // 陰影
+    const shadowOffset = this.w * 0.04;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(-this.w / 2 + shadowOffset, -this.h / 2 + shadowOffset * 1.5, this.w, this.h);
+
+    // 箱身
+    ctx.fillStyle = this.colorVariant.body;
+    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+
+    // 接縫
+    ctx.strokeStyle = this.colorVariant.edge;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -this.h / 2);
+    ctx.lineTo(0, this.h / 2);
+    ctx.moveTo(-this.w / 2, 0);
+    ctx.lineTo(this.w / 2, 0);
+    ctx.stroke();
+
+    // 急件條紋
+    if (this.colorVariant.name === 'urgent' && !this.isFragile) {
+      ctx.fillStyle = '#dc2626';
+      ctx.fillRect(-this.w / 2, this.h / 2 - 8, this.w, 4);
+      ctx.fillRect(-this.w / 2, -this.h / 2 + 4, this.w, 4);
+    }
+
+    // 易碎品：紅色邊框 + 警示條
+    if (this.isFragile) {
+      ctx.strokeStyle = COLORS.fragileRed;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(-this.w / 2, -this.h / 2, this.w, this.h);
+      // 對角紅條（左上 - 右下）
+      ctx.strokeStyle = COLORS.fragileRed;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-this.w / 2 + 6, -this.h / 2 + 6);
+      ctx.lineTo(this.w / 2 - 6, this.h / 2 - 6);
+      ctx.moveTo(this.w / 2 - 6, -this.h / 2 + 6);
+      ctx.lineTo(-this.w / 2 + 6, this.h / 2 - 6);
+      ctx.stroke();
+    }
+
+    // 標籤
+    const labelW = this.w * 0.6;
+    const labelH = this.h * 0.55;
+    const labelOffsetY = -this.h * 0.08;
+    const flipY = this.flipped ? 1 : this.flipProgress;
+    const scaleY = Math.cos(flipY * Math.PI);
+
+    ctx.save();
+    ctx.translate(0, labelOffsetY);
+    ctx.scale(1, Math.abs(scaleY) < 0.05 ? 0.05 : scaleY);
+
+    if (scaleY > 0) {
+      // 正面
+      if (this.isFragile) {
+        // 易碎品標籤：白底紅框，杯子破碎圖示，禁止符號
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(-labelW / 2, -labelH / 2, labelW, labelH);
+        ctx.strokeStyle = COLORS.fragileRed;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-labelW / 2, -labelH / 2, labelW, labelH);
+        drawFragileIcon(ctx, labelW * 0.65);
+      } else {
+        ctx.fillStyle = COLORS.cream;
+        ctx.fillRect(-labelW / 2, -labelH / 2, labelW, labelH);
+        ctx.strokeStyle = COLORS.ink;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-labelW / 2, -labelH / 2, labelW, labelH);
+        drawArrow(ctx, this.dir, labelW * 0.4);
+      }
+    } else {
+      ctx.fillStyle = COLORS.pink;
+      ctx.fillRect(-labelW / 2, -labelH / 2, labelW, labelH);
+      ctx.strokeStyle = COLORS.ink;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-labelW / 2, -labelH / 2, labelW, labelH);
+      ctx.fillStyle = COLORS.white;
+      ctx.font = `bold ${labelH * 0.5}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✓', 0, 0);
+    }
+    ctx.restore();
+
+    // 拖曳軌跡
+    if (this.dragStart && this.dragCurrent && !this.flipped) {
+      ctx.save();
+      ctx.rotate(-this.rot);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(this.dragStart.x - this.x, this.dragStart.y - this.y);
+      ctx.lineTo(this.dragCurrent.x - this.x, this.dragCurrent.y - this.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  hitTest(x, y) {
+    return Math.abs(x - this.x) < this.w / 2 &&
+           Math.abs(y - this.y) < this.h / 2;
+  }
+}
+
+function drawArrow(ctx, dir, size) {
+  ctx.strokeStyle = COLORS.ink;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, size, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = COLORS.pink;
+  ctx.save();
+  const angle = { up: -Math.PI / 2, down: Math.PI / 2, left: Math.PI, right: 0 }[dir];
+  ctx.rotate(angle);
+  ctx.beginPath();
+  const t = size * 0.55;
+  ctx.moveTo(t, 0);
+  ctx.lineTo(-t * 0.6, t * 0.7);
+  ctx.lineTo(-t * 0.6, -t * 0.7);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawFragileIcon(ctx, size) {
+  // 破裂酒杯圖示
+  ctx.strokeStyle = COLORS.fragileRed;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const s = size * 0.4;
+  // 杯口
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.6, -s * 0.5);
+  ctx.lineTo(-s * 0.5, -s * 0.5);
+  ctx.lineTo(-s * 0.2, s * 0.05);
+  ctx.lineTo(-s * 0.05, -s * 0.3);
+  ctx.lineTo(0.1 * s, s * 0.1);
+  ctx.lineTo(s * 0.4, -s * 0.5);
+  ctx.lineTo(s * 0.6, -s * 0.5);
+  ctx.stroke();
+  // 杯腳
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.2, s * 0.05);
+  ctx.lineTo(-s * 0.35, s * 0.5);
+  ctx.lineTo(s * 0.05, s * 0.5);
+  ctx.lineTo(0.1 * s, s * 0.1);
+  ctx.stroke();
+  // 裂痕飛濺
+  ctx.beginPath();
+  ctx.moveTo(s * 0.2, -s * 0.2);
+  ctx.lineTo(s * 0.5, -s * 0.1);
+  ctx.moveTo(s * 0.25, 0);
+  ctx.lineTo(s * 0.55, s * 0.15);
+  ctx.stroke();
+}
+
+// ==================== 干擾物（貓/鼠） ====================
+class Entity {
+  constructor(kind) {
+    this.kind = kind;
+    const effectiveBeltX = (phaseIndex === 3) ? BELT_X + BELT_W * 0.5 : BELT_X;
+    const effectiveBeltW = (phaseIndex === 3) ? BELT_W * 0.5 : BELT_W;
+    this.x = effectiveBeltX + effectiveBeltW / 2;
+    this.y = BELT_Y_TOP - 40;
+    this.size = kind === 'cat' ? BELT_W * 0.4 : BELT_W * 0.22;
+    this.alive = true;
+    this.angle = rand(-0.2, 0.2);
+    this.bobPhase = Math.random() * Math.PI * 2;
+  }
+  update(dt) {
+    this.y += beltSpeed * dt;
+    this.bobPhase += dt * 4;
+    if (this.y - this.size > BELT_Y_BOTTOM) this.alive = false;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y + Math.sin(this.bobPhase) * 2);
+    ctx.rotate(this.angle);
+    if (this.kind === 'cat') drawCat(ctx, this.size);
+    else drawMouse(ctx, this.size);
+    ctx.restore();
+  }
+  hitTest(x, y) {
+    return Math.hypot(x - this.x, y - this.y) < this.size * 0.55;
+  }
+}
+
+function drawCat(ctx, size) {
+  const s = size;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.45, s * 0.5, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = COLORS.catColor;
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.1, s * 0.45, s * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(-s * 0.25, -s * 0.18, s * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.42, -s * 0.35);
+  ctx.lineTo(-s * 0.35, -s * 0.5);
+  ctx.lineTo(-s * 0.25, -s * 0.36);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.18, -s * 0.36);
+  ctx.lineTo(-s * 0.1, -s * 0.5);
+  ctx.lineTo(-s * 0.05, -s * 0.32);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = COLORS.catColor;
+  ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.4, s * 0.1);
+  ctx.quadraticCurveTo(s * 0.6, s * 0.05, s * 0.55, s * 0.3);
+  ctx.stroke();
+  ctx.strokeStyle = COLORS.green; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.32, -s * 0.18); ctx.lineTo(-s * 0.24, -s * 0.18);
+  ctx.moveTo(-s * 0.2, -s * 0.18); ctx.lineTo(-s * 0.12, -s * 0.18);
+  ctx.stroke();
+}
+
+function drawMouse(ctx, size) {
+  const s = size;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.5, s * 0.5, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = COLORS.mouseColor;
+  ctx.beginPath();
+  ctx.ellipse(0, s * 0.15, s * 0.5, s * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(-s * 0.35, 0, s * 0.28, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath();
+  ctx.arc(-s * 0.45, -s * 0.25, s * 0.15, 0, Math.PI * 2);
+  ctx.arc(-s * 0.2, -s * 0.25, s * 0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f5a3b8';
+  ctx.beginPath();
+  ctx.arc(-s * 0.45, -s * 0.22, s * 0.08, 0, Math.PI * 2);
+  ctx.arc(-s * 0.2, -s * 0.22, s * 0.08, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = COLORS.mouseColor;
+  ctx.lineWidth = s * 0.06; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.45, s * 0.15);
+  ctx.quadraticCurveTo(s * 0.75, s * 0.1, s * 0.7, s * 0.4);
+  ctx.stroke();
+  ctx.fillStyle = COLORS.ink;
+  ctx.beginPath(); ctx.arc(-s * 0.42, -s * 0.05, s * 0.04, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f5a3b8';
+  ctx.beginPath(); ctx.arc(-s * 0.55, 0.02, s * 0.04, 0, Math.PI * 2); ctx.fill();
+}
+
+// ==================== 粒子 ====================
+class Particle {
+  constructor(x, y, color, text) {
+    this.x = x; this.y = y;
+    this.vx = rand(-30, 30);
+    this.vy = rand(-120, -60);
+    this.life = 1;
+    this.color = color;
+    this.text = text;
+  }
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.vy += 200 * dt;
+    this.life -= dt * 1.5;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle = this.color;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.text, this.x, this.y);
+    ctx.restore();
+  }
+}
+
+// ==================== Figure 03 繪製 ====================
+function drawFigure03Body(ctx, size, progress) {
+  // 純機器人本體（不含框、不含 HUD），可在任意位置使用
+  const ry = 0;
+  // 頭
+  ctx.fillStyle = COLORS.white;
+  ctx.beginPath();
+  ctx.arc(0, ry, size * 0.32, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = COLORS.ink;
+  ctx.fillRect(-size * 0.18, ry - size * 0.04, size * 0.36, size * 0.08);
+
+  // 身體
+  const bodyTop = ry + size * 0.32;
+  ctx.fillStyle = COLORS.white;
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.3, bodyTop);
+  ctx.lineTo(size * 0.3, bodyTop);
+  ctx.lineTo(size * 0.45, bodyTop + size * 0.6);
+  ctx.lineTo(-size * 0.45, bodyTop + size * 0.6);
+  ctx.closePath(); ctx.fill();
+
+  // 手臂
+  const armPhase = progress * Math.PI * 2;
+  const armSwing = Math.sin(armPhase) * size * 0.25;
+  const armDown = (Math.sin(armPhase - Math.PI / 2) + 1) * size * 0.3;
+  ctx.strokeStyle = COLORS.white;
+  ctx.lineWidth = Math.max(3, size * 0.1);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.32, bodyTop + size * 0.1);
+  ctx.lineTo(-size * 0.32 - armSwing, bodyTop + size * 0.1 + armDown);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(size * 0.32, bodyTop + size * 0.1);
+  ctx.lineTo(size * 0.32 + armSwing, bodyTop + size * 0.1 + armDown);
+  ctx.stroke();
+}
+
+function drawFigure03HUD(ctx, x, y, size, progress) {
+  const w = size * 1.6;
+  const h = size * 2.0;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.fillRect(-w / 2, -h / 2, w, h);
+  ctx.strokeStyle = COLORS.pink;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(-w / 2, -h / 2, w, h);
+  ctx.fillStyle = COLORS.pink;
+  ctx.font = 'bold 11px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('FIGURE 03', 0, -h / 2 + 4);
+
+  ctx.save();
+  ctx.translate(0, -h / 2 + 24);
+  drawFigure03Body(ctx, size, progress);
+  ctx.restore();
+
+  // 計數
+  ctx.fillStyle = COLORS.white;
+  ctx.font = 'bold 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`📦 ${bot.score}`, 0, h / 2 - 22);
+
+  ctx.restore();
+}
+
+// 簡筆玩家（被拖走時用）
+function drawPlayerAvatar(ctx, x, y, size, dragged = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (dragged) ctx.rotate(-0.3); // 被拖的姿勢
+  // 影子
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(0, size * 1.1, size * 0.5, size * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // 頭（粉色）
+  ctx.fillStyle = COLORS.pink;
+  ctx.beginPath();
+  ctx.arc(0, -size * 0.5, size * 0.3, 0, Math.PI * 2); ctx.fill();
+  // 身體（三角剪影 — 魷魚遊戲員工感）
+  ctx.beginPath();
+  ctx.moveTo(-size * 0.4, size);
+  ctx.lineTo(0, -size * 0.2);
+  ctx.lineTo(size * 0.4, size);
+  ctx.closePath();
+  ctx.fill();
+  // 標誌：圓形
+  ctx.fillStyle = COLORS.ink;
+  ctx.beginPath();
+  ctx.arc(0, size * 0.3, size * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// ==================== 邏輯 ====================
+function spawnPackageStack() {
+  const baseSize = pick([PACKAGE_SIZES[1], PACKAGE_SIZES[2]]);
+  const effectiveBeltX = (phaseIndex === 3) ? BELT_X + BELT_W * 0.5 : BELT_X;
+  const effectiveBeltW = (phaseIndex === 3) ? BELT_W * 0.5 : BELT_W;
+  const margin = effectiveBeltW * 0.25;
+  const baseX = rand(effectiveBeltX + margin, effectiveBeltX + effectiveBeltW - margin);
+  const baseY = BELT_Y_TOP - 60;
+
+  const bottom = new Package({
+    sizeVariant: baseSize, x: baseX, y: baseY, rot: rand(-0.2, 0.2),
+  });
+  packages.push(bottom);
+
+  const topSize = pick([PACKAGE_SIZES[0], PACKAGE_SIZES[1]]);
+  const offsetX = rand(-bottom.w * 0.3, bottom.w * 0.3);
+  const top = new Package({
+    sizeVariant: topSize, x: baseX + offsetX, y: baseY - bottom.h * 0.6, rot: rand(-0.3, 0.3),
+  });
+  packages.push(top);
+}
+
+function onMiss() {
+  player.lives--;
+  spawnParticle(W / 2, H / 2, COLORS.red, '✕ MISS');
+  Audio.miss();
+  if (player.lives <= 0) {
+    deathReason = '揀貨進度跟不上輸送帶';
+    startDeath();
+  }
+}
+
+function spawnParticle(x, y, color, text) {
+  particles.push(new Particle(x, y, color, text));
+}
+
+function startDeath() {
+  if (state !== 'playing') return;
+  state = 'dying';
+  Audio.alarmStart();
+  document.getElementById('redflash').classList.add('show');
+
+  // 初始化拖走動畫
+  deathAnim.t = 0;
+  // Figure 03 起始位置在原本 HUD 處
+  deathAnim.bigBotX = W - 60;
+  deathAnim.bigBotY = 70;
+  deathAnim.bigBotScale = 1; // 倍率
+  deathAnim.playerCaught = false;
+  deathAnim.playerX = W / 2;
+  deathAnim.playerY = H * 0.6;
+}
+
+function endGame() {
+  state = 'gameover';
+  Audio.alarmStop();
+  document.getElementById('redflash').classList.remove('show');
+  document.getElementById('finalYou').textContent = player.score;
+  document.getElementById('finalBot').textContent = bot.score;
+  document.getElementById('finalPhase').textContent = (phaseIndex + 1) + (phaseIndex === 3 ? ' (BOSS)' : '');
+  const ratio = bot.score > 0
+    ? Math.round((player.score / bot.score) * 100)
+    : 0;
+  document.getElementById('ratio').textContent = ratio + '%';
+  document.getElementById('deathReason').textContent = deathReason ? `死因：${deathReason}` : '';
+  document.getElementById('gameover').classList.remove('hidden');
+}
+
+function startGame() {
+  Audio.init();
+  Audio.resume();
+  state = 'playing';
+  player.score = 0;
+  player.lives = 3;
+  bot.score = 0;
+  bot.cycleProgress = 0;
+  bot.cycleTime = PHASES[0].botSpeed;
+  packages = [];
+  entities = [];
+  particles = [];
+  spawnTimer = 0;
+  spawnInterval = PHASES[0].spawnBase;
+  beltSpeed = PHASES[0].beltBase;
+  elapsed = 0;
+  phaseIndex = 0;
+  phaseStartTime = 0;
+  phaseAnnounceTimer = 2.0; // 開頭顯示 ROUND 1
+  overtakenLastFrame = false;
+  deathReason = '';
+  document.getElementById('start').classList.add('hidden');
+  document.getElementById('gameover').classList.add('hidden');
+  document.getElementById('redflash').classList.remove('show');
+  Audio.roundBell();
+}
+
+function updatePhase() {
+  if (phaseIndex >= PHASES.length - 1) return; // Boss 已是最終
+  const phase = PHASES[phaseIndex];
+  if (elapsed - phaseStartTime >= phase.duration) {
+    phaseIndex++;
+    phaseStartTime = elapsed;
+    phaseAnnounceTimer = 2.0;
+    if (phaseIndex === 3) {
+      Audio.bossEnter();
+    } else {
+      Audio.roundBell();
+    }
+  }
+}
+
+function update(dt) {
+  if (state === 'dying') {
+    updateDeath(dt);
+    return;
+  }
+  if (state !== 'playing') return;
+
+  elapsed += dt;
+  updatePhase();
+
+  const phase = PHASES[phaseIndex];
+  // 階段內難度漸增
+  const intoPhase = elapsed - phaseStartTime;
+  beltSpeed = phase.beltBase + intoPhase * 2;
+  spawnInterval = Math.max(phase.spawnBase * 0.55, phase.spawnBase - intoPhase * 8);
+  bot.cycleTime = Math.max(phase.botSpeed * 0.7, phase.botSpeed - intoPhase * 6);
+
+  if (phaseAnnounceTimer > 0) phaseAnnounceTimer -= dt;
+
+  spawnTimer += dt * 1000;
+  if (spawnTimer > spawnInterval) {
+    spawnTimer = 0;
+    const r = Math.random();
+    if (r < 0.7) {
+      const fragileRoll = Math.random() < phase.fragileChance;
+      if (fragileRoll) {
+        packages.push(new Package({ fragile: true }));
+      } else {
+        const stackChance = Math.min(0.4, 0.1 + elapsed * 0.005);
+        if (Math.random() < stackChance) spawnPackageStack();
+        else packages.push(new Package());
+      }
+    } else if (r < 0.88) {
+      entities.push(new Entity('mouse'));
+    } else {
+      entities.push(new Entity('cat'));
+    }
+  }
+
+  packages.forEach(p => p.update(dt));
+  packages = packages.filter(p => p.alive);
+  entities.forEach(e => e.update(dt));
+  entities = entities.filter(e => e.alive);
+  particles.forEach(p => p.update(dt));
+  particles = particles.filter(p => p.life > 0);
+
+  // Figure 03 循環
+  const prevProgress = bot.cycleProgress;
+  bot.cycleProgress += dt * 1000 / bot.cycleTime;
+  if (bot.cycleProgress >= 1) {
+    bot.cycleProgress -= 1;
+    bot.score++;
+  }
+  // 每半圈咔噠一次
+  const tnow = elapsed;
+  if (tnow - lastClackTime > bot.cycleTime / 1000 / 2 - 0.02) {
+    Audio.clack();
+    lastClackTime = tnow;
+  }
+
+  const isOvertaking = player.score > bot.score;
+  if (isOvertaking && !overtakenLastFrame) triggerOvertakeFlash();
+  overtakenLastFrame = isOvertaking;
+}
+
+function updateDeath(dt) {
+  deathAnim.t += dt;
+  const t = deathAnim.t;
+
+  // 階段：
+  // 0.0 - 0.6：Figure 03 從 HUD 位置變大並走到中央上方
+  // 0.6 - 1.2：俯衝抓住玩家
+  // 1.2 - 2.2：拖往右側
+  // 2.2+：跳結算
+
+  if (t < 0.6) {
+    // 從右上 HUD 位置 → 移到中央上方 + 放大
+    const k = t / 0.6;
+    const ek = 1 - Math.pow(1 - k, 3); // easeOutCubic
+    deathAnim.bigBotX = (W - 60) + (W / 2 - (W - 60)) * ek;
+    deathAnim.bigBotY = 70 + (H * 0.35 - 70) * ek;
+    deathAnim.bigBotScale = 1 + ek * 3.5; // 1 → 4.5
+  } else if (t < 1.2) {
+    // 俯衝抓人
+    const k = (t - 0.6) / 0.6;
+    const ek = k * k;
+    deathAnim.bigBotX = W / 2;
+    deathAnim.bigBotY = H * 0.35 + (H * 0.55 - H * 0.35) * ek;
+    deathAnim.bigBotScale = 4.5;
+    if (k > 0.85) deathAnim.playerCaught = true;
+  } else if (t < 2.2) {
+    // 拖往右側出畫面
+    const k = (t - 1.2) / 1.0;
+    deathAnim.bigBotX = W / 2 + (W + 150) * k * k * 0.5;
+    deathAnim.bigBotY = H * 0.55;
+    deathAnim.playerCaught = true;
+  } else {
+    endGame();
+  }
+}
+
+function triggerOvertakeFlash() {
+  const flash = document.getElementById('flash');
+  flash.classList.remove('show');
+  void flash.offsetWidth;
+  flash.classList.add('show');
+  spawnParticle(W / 2, H * 0.45, COLORS.green, 'OVERTAKE!');
+  Audio.overtake();
+}
+
+// ==================== 渲染 ====================
+function draw() {
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 背景幾何
+  ctx.save();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = COLORS.pink;
+  for (let i = 0; i < 6; i++) {
+    const sx = (i * 137) % W;
+    const sy = (i * 211) % H;
+    if (i % 3 === 0) {
+      ctx.beginPath(); ctx.arc(sx, sy, 30, 0, Math.PI * 2); ctx.fill();
+    } else if (i % 3 === 1) {
+      ctx.beginPath();
+      ctx.moveTo(sx, sy - 25); ctx.lineTo(sx + 22, sy + 18); ctx.lineTo(sx - 22, sy + 18);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.fillRect(sx - 22, sy - 22, 44, 44);
+    }
+  }
+  ctx.restore();
+
+  // 輸送帶
+  ctx.fillStyle = COLORS.belt;
+  ctx.fillRect(BELT_X, BELT_Y_TOP, BELT_W, BELT_Y_BOTTOM - BELT_Y_TOP);
+
+  // Boss 階段：左半邊輸送帶是 Figure 03 的
+  if (phaseIndex === 3) {
+    ctx.fillStyle = 'rgba(255, 2, 102, 0.15)';
+    ctx.fillRect(BELT_X, BELT_Y_TOP, BELT_W * 0.5, BELT_Y_BOTTOM - BELT_Y_TOP);
+    // 分隔線
+    ctx.strokeStyle = COLORS.pink;
+    ctx.lineWidth = 3;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(BELT_X + BELT_W * 0.5, BELT_Y_TOP);
+    ctx.lineTo(BELT_X + BELT_W * 0.5, BELT_Y_BOTTOM);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 輸送帶線條
+  ctx.strokeStyle = COLORS.beltLine;
+  ctx.lineWidth = 3;
+  const lineGap = 30;
+  const offset = (elapsed * beltSpeed) % lineGap;
+  for (let y = BELT_Y_TOP + offset; y < BELT_Y_BOTTOM; y += lineGap) {
+    ctx.beginPath();
+    ctx.moveTo(BELT_X + 6, y);
+    ctx.lineTo(BELT_X + BELT_W - 6, y);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = COLORS.ink;
+  ctx.lineWidth = 4;
+  ctx.strokeRect(BELT_X, BELT_Y_TOP, BELT_W, BELT_Y_BOTTOM - BELT_Y_TOP);
+
+  // Boss 階段：左半邊有一個大型 Figure 03 在揀貨
+  if ((phaseIndex === 3 && state === 'playing') || (state === 'dying' && deathAnim.t < 0.05)) {
+    drawBossFigure();
+  }
+
+  packages.forEach(p => p.draw(ctx));
+  entities.forEach(e => e.draw(ctx));
+  particles.forEach(p => p.draw(ctx));
+
+  // === HUD ===
+  ctx.fillStyle = COLORS.white;
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('YOU', 16, 16);
+  ctx.font = 'bold 32px monospace';
+  ctx.fillStyle = player.score > bot.score ? COLORS.green : COLORS.white;
+  ctx.fillText(`${player.score}`, 16, 34);
+
+  ctx.font = 'bold 18px monospace';
+  ctx.fillStyle = COLORS.pink;
+  ctx.fillText('♥'.repeat(player.lives), 16, 76);
+
+  // 右上角 Figure 03 HUD（dying 時隱藏）
+  if (state === 'playing') {
+    drawFigure03HUD(ctx, W - 60, 70, 30, bot.cycleProgress);
+  }
+
+  // 領先狀態
+  if (state === 'playing') {
+    const diff = player.score - bot.score;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    if (diff < -5) {
+      ctx.fillStyle = COLORS.pink;
+      ctx.fillText(`AI 領先 ${-diff} 個！`, W / 2, 16);
+    } else if (diff > 0) {
+      ctx.fillStyle = COLORS.green;
+      ctx.fillText(`您領先 ${diff} 個！`, W / 2, 16);
+    }
+  }
+
+  // 階段名稱公告
+  if (phaseAnnounceTimer > 0 && state === 'playing') {
+    const alpha = Math.min(1, phaseAnnounceTimer);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    const phase = PHASES[phaseIndex];
+    ctx.fillStyle = phaseIndex === 3 ? COLORS.pink : COLORS.white;
+    ctx.font = 'bold 36px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(phase.name, W / 2, H * 0.4);
+    ctx.font = 'bold 16px monospace';
+    ctx.fillStyle = COLORS.pink;
+    ctx.fillText(phase.sub, W / 2, H * 0.4 + 36);
+    ctx.restore();
+  }
+
+  // 死亡演出
+  if (state === 'dying') {
+    drawDeathAnimation();
+  }
+}
+
+function drawBossFigure() {
+  // 在 Boss 階段，左半邊輸送帶有一個大型 Figure 03
+  const bossX = BELT_X + BELT_W * 0.25;
+  const bossY = BELT_Y_TOP + 60;
+  ctx.save();
+  ctx.translate(bossX, bossY);
+  drawFigure03Body(ctx, 40, bot.cycleProgress);
+  ctx.restore();
+}
+
+function drawDeathAnimation() {
+  // 半透明黑幕
+  const t = deathAnim.t;
+  ctx.fillStyle = `rgba(0,0,0,${Math.min(0.5, t * 0.3)})`;
+  ctx.fillRect(0, 0, W, H);
+
+  // 玩家頭像（在中央）
+  if (!deathAnim.playerCaught) {
+    // 站立
+    drawPlayerAvatar(ctx, W / 2, H * 0.6, 28, false);
+  } else {
+    // 被拖（跟著 Figure 03 移動，位置在 Figure 03 旁邊）
+    const px = deathAnim.bigBotX - 30 * (deathAnim.bigBotScale > 3 ? 1.2 : 1);
+    const py = deathAnim.bigBotY + 30;
+    drawPlayerAvatar(ctx, px, py, 24, true);
+  }
+
+  // Figure 03 大型體
+  ctx.save();
+  ctx.translate(deathAnim.bigBotX, deathAnim.bigBotY);
+  // 進場時的「咣」一下放大震動
+  const shake = t < 0.6 ? Math.sin(t * 40) * (1 - t / 0.6) * 4 : 0;
+  ctx.translate(shake, 0);
+  drawFigure03Body(ctx, 30 * deathAnim.bigBotScale, bot.cycleProgress);
+  ctx.restore();
+}
+
+// ==================== 輸入 ====================
+let activePackage = null;
+let lastSlideSoundTime = 0;
+
+function getPointerPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const ev = e.touches ? e.touches[0] : e;
+  return {
+    x: (ev.clientX - rect.left) * (canvas.width / rect.width),
+    y: (ev.clientY - rect.top) * (canvas.height / rect.height),
+  };
+}
+
+function onPointerDown(e) {
+  Audio.resume();
+  if (state !== 'playing') return;
+  e.preventDefault();
+  const pos = getPointerPos(e);
+  for (let i = packages.length - 1; i >= 0; i--) {
+    const p = packages[i];
+    if (!p.flipped && p.hitTest(pos.x, pos.y)) {
+      // 易碎品被點擊就警告，但不算扣血 — 真正扣是「翻動方向正確且完成」時
+      activePackage = p;
+      p.dragStart = pos;
+      p.dragCurrent = pos;
+      return;
+    }
+  }
+  for (let i = entities.length - 1; i >= 0; i--) {
+    const ent = entities[i];
+    if (ent.hitTest(pos.x, pos.y)) {
+      spawnParticle(pos.x, pos.y, COLORS.red,
+        ent.kind === 'cat' ? '貓貓不要碰！' : '老鼠走開！');
+      ent.alive = false;
+      player.lives--;
+      Audio.miss();
+      if (player.lives <= 0) {
+        deathReason = ent.kind === 'cat' ? '誤觸貓咪三次' : '誤觸老鼠三次';
+        startDeath();
+      }
+      return;
+    }
+  }
+}
+
+function onPointerMove(e) {
+  if (state !== 'playing' || !activePackage) return;
+  e.preventDefault();
+  const pos = getPointerPos(e);
+  activePackage.dragCurrent = pos;
+
+  const dx = pos.x - activePackage.dragStart.x;
+  const dy = pos.y - activePackage.dragStart.y;
+  const dist = Math.hypot(dx, dy);
+  const needed = activePackage.w * 0.55;
+
+  const target = ARROW_VECTORS[activePackage.dir];
+  const norm = dist > 0 ? { x: dx / dist, y: dy / dist } : { x: 0, y: 0 };
+  const dot = norm.x * target.x + norm.y * target.y;
+
+  // 滑動音（每 150ms 一次）
+  const now = performance.now();
+  if (dist > 8 && now - lastSlideSoundTime > 150) {
+    Audio.slide();
+    lastSlideSoundTime = now;
+  }
+
+  if (activePackage.isFragile) {
+    // 易碎品：只要開始有實際移動就算翻 → 死
+    if (dist > 12) {
+      deathReason = '翻動易碎品標籤';
+      Audio.miss();
+      startDeath();
+      activePackage = null;
+    }
+    return;
+  }
+
+  if (dot > 0.7) {
+    activePackage.flipProgress = Math.min(1, dist / needed);
+    if (activePackage.flipProgress >= 1) {
+      activePackage.flipped = true;
+      player.score++;
+      spawnParticle(activePackage.x, activePackage.y - 30, COLORS.green, '+1');
+      Audio.flip();
+      activePackage = null;
+    }
+  } else {
+    activePackage.flipProgress = Math.max(0, activePackage.flipProgress - 0.02);
+  }
+}
+
+function onPointerUp(e) {
+  if (state !== 'playing') return;
+  if (activePackage && !activePackage.flipped) {
+    activePackage.dragStart = null;
+    activePackage.dragCurrent = null;
+  }
+  activePackage = null;
+}
+
+canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+canvas.addEventListener('touchend', onPointerUp, { passive: false });
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+canvas.addEventListener('mouseup', onPointerUp);
+
+// ==================== 主循環 ====================
+function loop(t) {
+  if (!lastTime) lastTime = t;
+  const dt = Math.min(0.05, (t - lastTime) / 1000);
+  lastTime = t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+
+// 靜音
+const muteBtn = document.getElementById('muteBtn');
+muteBtn.addEventListener('click', () => {
+  Audio.init();
+  const newMuted = !Audio.muted;
+  Audio.setMuted(newMuted);
+  muteBtn.textContent = newMuted ? '♪ OFF' : '♪ ON';
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

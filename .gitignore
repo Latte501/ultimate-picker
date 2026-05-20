@@ -1,0 +1,26 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Node (for future Capacitor integration)
+node_modules/
+package-lock.json
+
+# Capacitor / Android (when packaging)
+android/
+ios/
+.capacitor/
+
+# Build outputs
+dist/
+build/
